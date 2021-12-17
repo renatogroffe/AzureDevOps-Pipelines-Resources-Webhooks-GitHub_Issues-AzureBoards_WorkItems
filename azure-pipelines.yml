@@ -1,0 +1,42 @@
+# Informações que constam no Payload com dados de Issues do GitHub:
+# https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issues
+
+# Webhook a ser configurado no Azure DevOps:
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/process/resources?view=azure-devops&tabs=schema#define-a-webhooks-resource
+
+# Extensão para criação de Work Items:
+# https://marketplace.visualstudio.com/items?itemName=mspremier.CreateWorkItem
+
+trigger: none
+
+resources:
+  webhooks:
+    - webhook: webhookgroffeTrigger
+      connection: connectionwebhookgroffe
+      filters:
+        - path: action
+          value: opened
+
+variables:
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Tests
+  displayName: Tests stage
+  jobs:
+  - job: Tests
+    displayName: Tests
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - script: |
+        echo '***** Recebida do GitHub a Issue:'
+        echo '#${{ parameters.webhookgroffeTrigger.issue.number }} ${{ parameters.webhookgroffeTrigger.issue.title}}'
+        echo 'Link: ${{ parameters.webhookgroffeTrigger.issue.html_url }}'
+      displayName: Exibir informações sobre a Issue do GitHub
+    - task: CreateWorkItem@1
+      displayName: Criar Work Item no Azure Boards
+      inputs:
+        workItemType: 'issue'
+        title: 'Issue aberta no GitHub | ${{ parameters.webhookgroffeTrigger.issue.number }} ${{ parameters.webhookgroffeTrigger.issue.title }}'
+        fieldMappings: 'Description=${{ parameters.webhookgroffeTrigger.issue.html_url }}'        
